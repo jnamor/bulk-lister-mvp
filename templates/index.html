@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Bulk Product Lister</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+    h1 { font-size: 26px; font-weight: 700; color: #111; margin-bottom: 10px; }
+    .subtitle { color: #666; font-size: 15px; margin-bottom: 36px; line-height: 1.5; }
+
+    .drop-zone {
+      border: 2px dashed #d0d0d0;
+      border-radius: 12px;
+      padding: 36px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #5c6bc0;
+      background: #f3f4ff;
+    }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .drop-icon { font-size: 36px; margin-bottom: 10px; }
+    .drop-text { color: #555; font-size: 14px; }
+    .drop-text span { color: #5c6bc0; font-weight: 600; }
+    .file-name {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      background: #5c6bc0;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button[type="submit"]:hover { background: #3f51b5; }
+    button[type="submit"]:disabled { background: #aaa; cursor: not-allowed; }
+
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+      min-height: 20px;
+    }
+    .spinner { display: none; }
+    .spinner.active { display: inline-block; }
+
+    .how {
+      margin-top: 36px;
+      text-align: left;
+      border-top: 1px solid #eee;
+      padding-top: 24px;
+    }
+    .how h3 { font-size: 13px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+    .step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+    .step-num {
+      width: 24px; height: 24px; min-width: 24px;
+      background: #5c6bc0; color: white;
+      border-radius: 50%; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step p { font-size: 14px; color: #444; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">⚡ Propulsé par Claude AI</div>
+    <h1>AI Bulk Product Lister</h1>
+    <p class="subtitle">Upload ton catalogue fournisseur CSV et génère des listings Shopify premium en quelques secondes.</p>
+
+    <form id="uploadForm" action="/generate" method="POST" enctype="multipart/form-data">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" name="csv_file" id="fileInput" accept=".csv" required />
+        <div class="drop-icon">📂</div>
+        <div class="drop-text">Glisse ton fichier ici ou <span>clique pour choisir</span></div>
+        <div class="file-name" id="fileName"></div>
+      </div>
+      <button type="submit" id="submitBtn">Générer les listings Shopify →</button>
+    </form>
+
+    <div class="status" id="status"></div>
+
+    <div class="how">
+      <h3>Comment ça marche</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Upload ton CSV fournisseur (product_name, description_raw, price, category...)</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>Claude génère titres SEO, descriptions premium, tags et meta pour chaque produit</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>Tu reçois un CSV prêt à importer directement dans Shopify — Products → Import</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+    const submitBtn = document.getElementById('submitBtn');
+    const status = document.getElementById('status');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) {
+        fileName.textContent = '✅ ' + fileInput.files[0].name;
+      }
+    });
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      fileInput.files = e.dataTransfer.files;
+      if (fileInput.files[0]) fileName.textContent = '✅ ' + fileInput.files[0].name;
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', () => {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Génération en cours...';
+      status.textContent = 'Claude analyse tes produits... (quelques secondes par produit)';
+    });
+  </script>
+</body>
+</html>

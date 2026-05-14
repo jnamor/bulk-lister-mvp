@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+venv/
+shopify_import.csv
+supplier.csv
