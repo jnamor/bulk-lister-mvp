@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -110,35 +110,35 @@
 </head>
 <body>
   <div class="card">
-    <div class="badge">⚡ Propulsé par Claude AI</div>
+    <div class="badge">⚡ Powered by Bulk AI</div>
     <h1>AI Bulk Product Lister</h1>
-    <p class="subtitle">Upload ton catalogue fournisseur CSV et génère des listings Shopify premium en quelques secondes.</p>
+    <p class="subtitle">Upload your supplier CSV catalogue and generate premium Shopify listings in seconds.</p>
 
     <form id="uploadForm" action="/generate" method="POST" enctype="multipart/form-data">
       <div class="drop-zone" id="dropZone">
         <input type="file" name="csv_file" id="fileInput" accept=".csv" required />
         <div class="drop-icon">📂</div>
-        <div class="drop-text">Glisse ton fichier ici ou <span>clique pour choisir</span></div>
+        <div class="drop-text">Drag your file here or <span>click to choose</span></div>
         <div class="file-name" id="fileName"></div>
       </div>
-      <button type="submit" id="submitBtn">Générer les listings Shopify →</button>
+      <button type="submit" id="submitBtn">Generate Shopify listings →</button>
     </form>
 
     <div class="status" id="status"></div>
 
     <div class="how">
-      <h3>Comment ça marche</h3>
+      <h3>How it works</h3>
       <div class="step">
         <div class="step-num">1</div>
-        <p>Upload ton CSV fournisseur (product_name, description_raw, price, category...)</p>
+        <p>Upload your supplier CSV (product_name, description_raw, price, category...)</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <p>Claude génère titres SEO, descriptions premium, tags et meta pour chaque produit</p>
+        <p>Bulk generates SEO titles, premium descriptions, tags and meta for each product</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <p>Tu reçois un CSV prêt à importer directement dans Shopify — Products → Import</p>
+        <p>You receive a CSV ready to import directly into Shopify — Products → Import</p>
       </div>
     </div>
   </div>
@@ -167,8 +167,8 @@
 
     document.getElementById('uploadForm').addEventListener('submit', () => {
       submitBtn.disabled = true;
-      submitBtn.textContent = '⏳ Génération en cours...';
-      status.textContent = 'Claude analyse tes produits... (quelques secondes par produit)';
+      submitBtn.textContent = '⏳ Generating...';
+      status.textContent = 'Bulk is analysing your products... (a few seconds per product)';
     });
   </script>
 </body>
