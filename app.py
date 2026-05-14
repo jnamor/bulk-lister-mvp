@@ -7,6 +7,8 @@ import anthropic
 from flask import Flask, request, render_template, send_file
 from dotenv import load_dotenv
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -62,11 +64,17 @@ def generate():
 
     df = pd.read_csv(file)
     products = df.to_dict(orient="records")
-    shopify_rows = []
 
-    for product in products:
+    # Limite de sécurité : 100 produits max par upload
+    if len(products) > 100:
+        return "Maximum 100 produits par upload.", 400
+
+    shopify_rows = [None] * len(products)  # pré-alloue l'ordre
+
+    def process_one(args):
+        index, product = args
         transformed = transform_product(product)
-        shopify_rows.append({
+        return index, {
             "Handle":               transformed["handle"],
             "Title":                transformed["title"],
             "Body (HTML)":          transformed["body_html"],
@@ -78,11 +86,16 @@ def generate():
             "Variant Weight Unit":  "kg",
             "SEO Title":            transformed["seo_title"],
             "SEO Description":      transformed["seo_description"],
-        })
+        }
+
+    # 5 appels Claude simultanés — respecte les rate limits Anthropic
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(process_one, (i, p)) for i, p in enumerate(products)]
+        for future in as_completed(futures):
+            index, row = future.result()
+            shopify_rows[index] = row  # conserve l'ordre original
 
     output_df = pd.DataFrame(shopify_rows, columns=SHOPIFY_COLUMNS)
-
-    # Renvoie le CSV directement en téléchargement — pas de fichier stocké sur le serveur
     output = io.StringIO()
     output_df.to_csv(output, index=False)
     output.seek(0)
