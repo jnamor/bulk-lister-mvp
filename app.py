@@ -21,21 +21,21 @@ SHOPIFY_COLUMNS = [
 ]
 
 def transform_product(raw_product: dict) -> dict:
-    prompt = f"""Tu es un expert en e-commerce Shopify et copywriting produit.
-  
-Voici les données brutes d'un produit fournisseur :
+    prompt = f"""You are a Shopify e-commerce and product copywriting expert.
+
+Here is the raw supplier product data:
 {json.dumps(raw_product, indent=2, ensure_ascii=False)}
 
-Génère les champs Shopify suivants en JSON (et rien d'autre, pas de markdown) :
+Generate the following Shopify fields as JSON (and nothing else, no markdown):
 {{
-  "handle": "slug-url-friendly-du-produit",
-  "title": "Titre produit accrocheur et SEO (max 70 chars)",
-  "body_html": "<p>Description premium 3-4 phrases, bénéfices centrés client, HTML valide</p>",
-  "vendor": "déduit du contexte ou 'Premium Brand'",
-  "type": "catégorie produit Shopify",
-  "tags": "tag1, tag2, tag3, tag4, tag5 (séparés par virgules)",
-  "seo_title": "Titre SEO optimisé (max 60 chars)",
-  "seo_description": "Meta description (max 160 chars, bénéfice principal)"
+  "handle": "url-friendly-product-slug",
+  "title": "Catchy SEO product title (max 70 chars)",
+  "body_html": "<p>Premium 3-4 sentence description, customer-focused benefits, valid HTML</p>",
+  "vendor": "inferred from context or 'Premium Brand'",
+  "type": "Shopify product category",
+  "tags": "tag1, tag2, tag3, tag4, tag5 (comma-separated)",
+  "seo_title": "Optimized SEO title (max 60 chars)",
+  "seo_description": "Meta description (max 160 chars, main benefit)"
 }}"""
 
     response = client.messages.create(
@@ -47,7 +47,7 @@ Génère les champs Shopify suivants en JSON (et rien d'autre, pas de markdown) 
     text = response.content[0].text.strip()
     match = re.search(r'\{.*\}', text, re.DOTALL)
     if not match:
-        raise ValueError(f"Aucun JSON trouvé : {text}")
+        raise ValueError(f"No JSON found: {text}")
     return json.loads(match.group())
 
 
@@ -60,16 +60,16 @@ def index():
 def generate():
     file = request.files.get("csv_file")
     if not file:
-        return "Aucun fichier reçu.", 400
+        return "No file received.", 400
 
     df = pd.read_csv(file)
     products = df.to_dict(orient="records")
 
-    # Limite de sécurité : 100 produits max par upload
+    # Safety limit: 100 products max per upload
     if len(products) > 100:
-        return "Maximum 100 produits par upload.", 400
+        return "Maximum 100 products per upload.", 400
 
-    shopify_rows = [None] * len(products)  # pré-alloue l'ordre
+    shopify_rows = [None] * len(products)  # pre-allocates order
 
     def process_one(args):
         index, product = args
@@ -88,12 +88,12 @@ def generate():
             "SEO Description":      transformed["seo_description"],
         }
 
-    # 5 appels Claude simultanés — respecte les rate limits Anthropic
+    # 5 simultaneous Claude calls — respects Anthropic rate limits
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(process_one, (i, p)) for i, p in enumerate(products)]
         for future in as_completed(futures):
             index, row = future.result()
-            shopify_rows[index] = row  # conserve l'ordre original
+            shopify_rows[index] = row  # preserves original order
 
     output_df = pd.DataFrame(shopify_rows, columns=SHOPIFY_COLUMNS)
     output = io.StringIO()
